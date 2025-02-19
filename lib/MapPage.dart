@@ -98,9 +98,7 @@ class _MapPageState extends State<MapPage> {
           position: SharedLocationData.driverLocation,
           infoWindow: InfoWindow(
             title: 'Driver (Bus) Location',
-            onTap: () {
-              // Do nothing.
-            },
+          
           ),
         ),
       );
@@ -146,7 +144,7 @@ class _MapPageState extends State<MapPage> {
           // Navigate to the NotificationsPage to view notifications.
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const NotificationsPage()),
+            MaterialPageRoute(builder: (context) => NotificationsPage()),
           );
         },
         child: const Icon(Icons.notifications),
