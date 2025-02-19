@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "917216489089",
+    "project_id": "trackbusbase",
+    "storage_bucket": "trackbusbase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917216489089:android:670ac9f64371983c62a780",
+        "android_client_info": {
+          "package_name": "com.example.trackbus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnJFuPIq4-lpNDYSEU0irfIZQmOqZUBbo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
