@@ -48,6 +48,7 @@ dependencies:
   firebase_database: ^11.3.2
   image_picker: ^1.1.2
   geocoding: ^3.0.0
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

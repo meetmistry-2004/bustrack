@@ -3,7 +3,7 @@ import 'package:trackbus/DriverHomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trackbus/example/auth.dart';
 import 'package:trackbus/DriverSignUpPage.dart';
-
+import 'package:google_sign_in/google_sign_in.dart'; // Import GoogleSignIn
 
 class DriverLoginPage extends StatefulWidget {
   const DriverLoginPage({Key? key}) : super(key: key);
@@ -23,10 +23,48 @@ class _DriverLoginPageState extends State<DriverLoginPage> {
       isLoading = true;
     });
 
-    User? user = await _authService.loginWithEmailPassword(
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
+    try {
+      User? user = await _authService.loginWithEmailPassword(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+
+      setState(() {
+        isLoading = false;
+      });
+
+      if (user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Driver Login Successful.")),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DriverNavigationPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("⚠️ Login Failed. Check credentials.")),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Login Failed. Check credentials.")),
+      );
+    }
+  }
+
+  void loginWithGoogle() async {
+    // Force sign-out to trigger account picker each time
+    await GoogleSignIn().signOut();
+
+    setState(() {
+      isLoading = true;
+    });
+
+    User? user = await _authService.signInWithGoogle();
 
     setState(() {
       isLoading = false;
@@ -34,16 +72,15 @@ class _DriverLoginPageState extends State<DriverLoginPage> {
 
     if (user != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Driver Login Successful.")),
+        const SnackBar(content: Text("✅ Driver Login with Google Successful.")),
       );
-      // Navigate to Driver Dashboard or Home Page (replace with correct page)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const DriverNavigationPage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Login Failed. Check credentials.")),
+        const SnackBar(content: Text("⚠️ Google Login Failed.")),
       );
     }
   }
@@ -117,20 +154,36 @@ class _DriverLoginPageState extends State<DriverLoginPage> {
                     const SizedBox(height: 24),
                     isLoading
                         ? const CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: login,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: const Text("Login"),
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ElevatedButton(
+                                onPressed: login,
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                child: const Text("Login"),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: loginWithGoogle,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.redAccent,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                child: const Text(
+                                  "Login with Google",
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ),
+                            ],
                           ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) => DriverSignUpPage()),
+                          MaterialPageRoute(builder: (context) => DriverSignUpPage()),
                         );
                       },
                       child: const Text("Don't have an account? Sign Up"),

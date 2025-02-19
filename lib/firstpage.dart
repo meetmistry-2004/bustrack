@@ -5,8 +5,6 @@ import 'package:trackbus/AboutUs.dart';
 import 'package:trackbus/MapPage.dart';
 import 'package:trackbus/Notifications.dart';
 import 'package:trackbus/ProfilePage.dart';
-import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class FirstPage extends StatefulWidget {
   const FirstPage({super.key});
@@ -63,15 +61,6 @@ class _FirstPageState extends State<FirstPage> {
         onTap: () {
           Navigator.push(
               context, MaterialPageRoute(builder: (context) => AboutUsPage()));
-        },
-      ),
-      Spacer(),
-      ListTile(
-        leading: Icon(Icons.logout, color: Colors.red),
-        title: Text('Logout', style: TextStyle(fontSize: 16, color: Colors.red)),
-        onTap: () async {
-          await FirebaseAuth.instance.signOut();
-              exit(0); // This closes the app
         },
       ),
     ],

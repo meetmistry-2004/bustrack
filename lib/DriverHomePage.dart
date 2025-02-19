@@ -1,6 +1,8 @@
+// DriverNavigationPage.dart
 import 'package:flutter/material.dart';
 import 'package:trackbus/DriverMapPage.dart';
 import 'package:trackbus/sharedlocation.dart';
+import 'package:trackbus/Notification_services.dart';
 
 class DriverNavigationPage extends StatelessWidget {
   const DriverNavigationPage({Key? key}) : super(key: key);
@@ -23,16 +25,18 @@ class DriverNavigationPage extends StatelessWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () {
-            // Update shared data: mark route as started and set notification
+            // Mark the route as started and trigger notification.
             SharedLocationData.routeStarted = true;
-            SharedLocationData.notification = "Route has started";
-            // Navigate to the Driver Map page
+            String message = "Route has started";
+            SharedLocationData.notifications.add(message);
+            NotificationService().showNotification("Route Start", message);
+            // Navigate to the Driver Map page.
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const DriverMapPage()),
             );
           },
-          child: const Text("Start Route"),
+          child: const Text("Start Navigation"),
         ),
       ),
     );

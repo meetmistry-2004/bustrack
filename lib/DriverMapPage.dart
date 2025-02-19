@@ -1,7 +1,11 @@
+// DriverMapPage.dart
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:trackbus/sharedlocation.dart';
+import 'package:trackbus/Notification_services.dart';
 
 class DriverMapPage extends StatefulWidget {
   const DriverMapPage({Key? key}) : super(key: key);
@@ -14,14 +18,28 @@ class _DriverMapPageState extends State<DriverMapPage> {
   GoogleMapController? _mapController;
   final Location _locationService = Location();
   bool _isRouteActive = false;
-  
+  Timer? _lateTimer;
+  bool _busArrivedNotified = false;
+
   // Current driver location (initialized from shared data)
   LatLng _currentPosition = SharedLocationData.driverLocation;
+
+  // Define a threshold (in meters) to consider the bus has arrived.
+  final double arrivalThreshold = 50.0;
+  
+  // For demonstration, assume the expected travel duration is 30 seconds.
+  final Duration expectedTravelDuration = const Duration(seconds: 30);
 
   @override
   void initState() {
     super.initState();
     _checkLocationPermissionAndListen();
+  }
+
+  @override
+  void dispose() {
+    _lateTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkLocationPermissionAndListen() async {
@@ -49,15 +67,63 @@ class _DriverMapPageState extends State<DriverMapPage> {
             CameraUpdate.newLatLng(_currentPosition),
           );
         }
+        _checkArrival();
       }
     });
+  }
+
+  // Check if bus has reached the student's location.
+  void _checkArrival() {
+    double distance = _calculateDistance(
+      _currentPosition.latitude,
+      _currentPosition.longitude,
+      SharedLocationData.studentLocation.latitude,
+      SharedLocationData.studentLocation.longitude,
+    );
+    if (distance <= arrivalThreshold && !_busArrivedNotified) {
+      _busArrivedNotified = true;
+      String message = "Bus has reached your location";
+      SharedLocationData.notifications.add(message);
+      NotificationService().showNotification("Arrival", message);
+    }
+  }
+
+  // Haversine formula to calculate the distance (in meters) between two points.
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
+    const double R = 6371000; // Earth's radius in meters
+    double dLat = _deg2rad(lat2 - lat1);
+    double dLon = _deg2rad(lon2 - lon1);
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_deg2rad(lat1)) *
+            math.cos(_deg2rad(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return R * c;
+  }
+
+  double _deg2rad(double deg) {
+    return deg * (math.pi / 180);
   }
 
   void _startRoute() {
     setState(() {
       _isRouteActive = true;
       SharedLocationData.routeStarted = true;
-      SharedLocationData.notification = "Route has started";
+      String message = "Route has started";
+      SharedLocationData.notifications.add(message);
+      NotificationService().showNotification("Route Start", message);
+      _busArrivedNotified = false; // reset for this journey
+    });
+    // Schedule a timer to check for delay.
+    _lateTimer?.cancel();
+    _lateTimer = Timer(expectedTravelDuration, () {
+      if (!_busArrivedNotified) {
+        String message = "Bus is running late";
+        SharedLocationData.notifications.add(message);
+        NotificationService().showNotification("Delay", message);
+      }
     });
   }
 
@@ -65,8 +131,11 @@ class _DriverMapPageState extends State<DriverMapPage> {
     setState(() {
       _isRouteActive = false;
       SharedLocationData.routeStarted = false;
-      SharedLocationData.notification = "Route has ended";
+      String message = "Route has ended";
+      SharedLocationData.notifications.add(message);
+      NotificationService().showNotification("Route End", message);
     });
+    _lateTimer?.cancel();
     // Close the map page and return to the previous screen.
     Navigator.pop(context);
   }
@@ -144,7 +213,8 @@ class _DriverMapPageState extends State<DriverMapPage> {
           Expanded(
             child: _isRouteActive
                 ? GoogleMap(
-                    initialCameraPosition: CameraPosition(target: center, zoom: 14),
+                    initialCameraPosition:
+                        CameraPosition(target: center, zoom: 14),
                     markers: markers,
                     polylines: polylines,
                     onMapCreated: (controller) {
@@ -154,7 +224,8 @@ class _DriverMapPageState extends State<DriverMapPage> {
                 : Center(
                     child: Text(
                       "Route not active",
-                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      style:
+                          TextStyle(fontSize: 18, color: Colors.grey[600]),
                     ),
                   ),
           ),

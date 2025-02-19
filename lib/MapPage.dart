@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:trackbus/sharedlocation.dart';
+import 'package:trackbus/Notifications.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
@@ -24,7 +25,7 @@ class _MapPageState extends State<MapPage> {
     super.initState();
     _checkLocationPermissionAndListen();
 
-    // Refresh UI every second to update the driver's marker if it changes.
+    // Refresh UI every second to update markers if shared data changes.
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {});
     });
@@ -67,36 +68,59 @@ class _MapPageState extends State<MapPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate the midpoint between the driver's and student's locations.
-    LatLng center = LatLng(
-      (SharedLocationData.driverLocation.latitude + SharedLocationData.studentLocation.latitude) / 2,
-      (SharedLocationData.driverLocation.longitude + SharedLocationData.studentLocation.longitude) / 2,
-    );
+    // If driver's location is enabled, center between the two; otherwise, center on student.
+    LatLng center;
+    if (SharedLocationData.isDriverLocationEnabled) {
+      center = LatLng(
+        (SharedLocationData.driverLocation.latitude + SharedLocationData.studentLocation.latitude) / 2,
+        (SharedLocationData.driverLocation.longitude + SharedLocationData.studentLocation.longitude) / 2,
+      );
+    } else {
+      center = SharedLocationData.studentLocation;
+    }
 
+    // Build markers list. Always show student marker.
     Set<Marker> markers = {
-      Marker(
-        markerId: const MarkerId('driver'),
-        position: SharedLocationData.driverLocation,
-        infoWindow: const InfoWindow(title: 'Driver (Bus) Location'),
-      ),
       Marker(
         markerId: const MarkerId('student'),
         position: SharedLocationData.studentLocation,
-        infoWindow: const InfoWindow(title: 'Your Location'),
+        infoWindow: InfoWindow(
+          title: 'Your Location',
+        ),
       ),
     };
 
-    Set<Polyline> polylines = {
-      Polyline(
-        polylineId: const PolylineId('route'),
-        points: [
-          SharedLocationData.driverLocation,
-          SharedLocationData.studentLocation,
-        ],
-        color: Colors.blue,
-        width: 5,
-      ),
-    };
+    // Add driver marker only if the driver's location is enabled.
+    if (SharedLocationData.isDriverLocationEnabled) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('driver'),
+          position: SharedLocationData.driverLocation,
+          infoWindow: InfoWindow(
+            title: 'Driver (Bus) Location',
+            onTap: () {
+              // Do nothing.
+            },
+          ),
+        ),
+      );
+    }
+
+    // Build polyline connecting the two locations only if driver's location is enabled.
+    Set<Polyline> polylines = {};
+    if (SharedLocationData.isDriverLocationEnabled) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: [
+            SharedLocationData.driverLocation,
+            SharedLocationData.studentLocation,
+          ],
+          color: Colors.blue,
+          width: 5,
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -116,6 +140,16 @@ class _MapPageState extends State<MapPage> {
         onMapCreated: (controller) {
           _mapController = controller;
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Navigate to the NotificationsPage to view notifications.
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NotificationsPage()),
+          );
+        },
+        child: const Icon(Icons.notifications),
       ),
     );
   }

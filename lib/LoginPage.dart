@@ -3,6 +3,7 @@ import 'package:trackbus/SignUp.dart';
 import 'package:trackbus/log.dart';
 import 'package:trackbus/example/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart'; // Import GoogleSignIn
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -18,30 +19,68 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
 
   void login() async {
+    // Check if both email and password are provided
+    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter the credential.")),
+      );
+      return;
+    }
+  
     setState(() {
       isLoading = true;
     });
-    User? user = await _authService.loginWithEmailPassword(
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
-    setState(() {
-      isLoading = false;
-    });
-    if (user != null) {
-      print("✅ Login Successful: ${user.email}");
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => Log()),
+  
+    try {
+      // Attempt to sign in; this may throw a FirebaseAuthException.
+      User? user = await _authService.loginWithEmailPassword(
+        emailController.text.trim(),
+        passwordController.text.trim(),
       );
-    } else {
+  
+      setState(() {
+        isLoading = false;
+      });
+  
+      if (user != null) {
+        print("✅ Login Successful: ${user.email}");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Log()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      // Show custom error messages based on error code.
+      if (e.code == 'wrong-password') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Password entered is incorrect.")),
+        );
+      } else if (e.code == 'user-not-found') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Username entered is incorrect.")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login Failed. Please check your credentials.")),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Login Failed. Please check your credentials.")),
+        const SnackBar(content: Text("An error occurred. Please try again.")),
       );
     }
   }
 
   void loginWithGoogle() async {
+    // Force sign-out so that the account picker is shown each time.
+    await GoogleSignIn().signOut();
+  
     setState(() {
       isLoading = true;
     });
@@ -61,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,7 +186,10 @@ class _LoginPageState extends State<LoginPage> {
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: loginWithGoogle,
-                                child: const Text("Login with Google",style:TextStyle(color:Colors.black,)),
+                                child: const Text(
+                                  "Login with Google",
+                                  style: TextStyle(color: Colors.black),
+                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.redAccent,
                                   padding: const EdgeInsets.symmetric(vertical: 16),
