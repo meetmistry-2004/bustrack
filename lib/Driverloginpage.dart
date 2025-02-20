@@ -39,7 +39,7 @@ class _DriverLoginPageState extends State<DriverLoginPage> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const DriverNavigationPage()),
+          MaterialPageRoute(builder: (context) => DriverHomePage()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +76,7 @@ class _DriverLoginPageState extends State<DriverLoginPage> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const DriverNavigationPage()),
+        MaterialPageRoute(builder: (context) => DriverHomePage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

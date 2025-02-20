@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
 void main() {
@@ -38,6 +39,23 @@ class _ProfilePageState extends State<ProfilePage> {
     location: 'Mumbai, India',
   );
 
+  @override
+  void initState() {
+    super.initState();
+    loadProfileImage();
+  }
+
+  // Load saved image path from shared preferences
+  void loadProfileImage() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? imagePath = prefs.getString('profileImage');
+    if (imagePath != null) {
+      setState(() {
+        user.profileImage = File(imagePath);
+      });
+    }
+  }
+
   void editProfile() async {
     final updatedUser = await Navigator.push(
       context,
@@ -53,12 +71,16 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // Pick image and save its path
   void pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         user.profileImage = File(pickedFile.path);
       });
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profileImage', pickedFile.path);
     }
   }
 
@@ -80,7 +102,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     radius: 60,
                     backgroundImage: user.profileImage != null
                         ? FileImage(user.profileImage!)
-                        : AssetImage('assets/profile_placeholder.png') as ImageProvider,
+                        : AssetImage('assets/profile_placeholder.png')
+                            as ImageProvider,
                   ),
                   Positioned(
                     bottom: 0,
@@ -103,9 +126,14 @@ class _ProfilePageState extends State<ProfilePage> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            ProfileInfoRow(icon: Icons.email, title: 'Email', value: user.email),
-            ProfileInfoRow(icon: Icons.phone, title: 'Phone', value: user.phone),
-            ProfileInfoRow(icon: Icons.location_on, title: 'Location', value: user.location),
+            ProfileInfoRow(
+                icon: Icons.email, title: 'Email', value: user.email),
+            ProfileInfoRow(
+                icon: Icons.phone, title: 'Phone', value: user.phone),
+            ProfileInfoRow(
+                icon: Icons.location_on,
+                title: 'Location',
+                value: user.location),
             SizedBox(height: 30),
             ElevatedButton(
               onPressed: editProfile,
@@ -123,7 +151,11 @@ class ProfileInfoRow extends StatelessWidget {
   final String title;
   final String value;
 
-  ProfileInfoRow({required this.icon, required this.title, required this.value});
+  ProfileInfoRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,9 +169,12 @@ class ProfileInfoRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 16, color: Colors.grey)),
+                Text(title,
+                    style: TextStyle(fontSize: 16, color: Colors.grey)),
                 SizedBox(height: 4),
-                Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                Text(value,
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -197,15 +232,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Edit Profile'), backgroundColor: Colors.blueAccent),
+      appBar: AppBar(
+        title: Text('Edit Profile'),
+        backgroundColor: Colors.blueAccent,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            TextField(controller: nameController, decoration: InputDecoration(labelText: 'Name')),
-            TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email')),
-            TextField(controller: phoneController, decoration: InputDecoration(labelText: 'Phone')),
-            TextField(controller: locationController, decoration: InputDecoration(labelText: 'Location')),
+            TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Name')),
+            TextField(
+                controller: emailController,
+                decoration: InputDecoration(labelText: 'Email')),
+            TextField(
+                controller: phoneController,
+                decoration: InputDecoration(labelText: 'Phone')),
+            TextField(
+                controller: locationController,
+                decoration: InputDecoration(labelText: 'Location')),
             SizedBox(height: 20),
             ElevatedButton(onPressed: saveProfile, child: Text('Save')),
           ],
