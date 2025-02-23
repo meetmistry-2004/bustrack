@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:trackbus/SignUp.dart';
-import 'package:trackbus/log.dart';
-import 'package:trackbus/example/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart'; // Import GoogleSignIn
+import 'package:trackbus/example/auth.dart';
+import 'log.dart';
+import 'package:trackbus/SignUp.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -13,74 +12,58 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  // Controllers for email and password fields.
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  
+  // GlobalKey for form validation.
+  final _formKey = GlobalKey<FormState>();
+
   final AuthService _authService = AuthService();
   bool isLoading = false;
 
-  void login() async {
-    // Check if both email and password are provided
-    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter the credential.")),
-      );
-      return;
-    }
-  
+  // Simple regex for validating email addresses.
+  final RegExp emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> login() async {
+    if (!_formKey.currentState!.validate()) return;
+    
     setState(() {
       isLoading = true;
     });
-  
     try {
-      // Attempt to sign in; this may throw a FirebaseAuthException.
       User? user = await _authService.loginWithEmailPassword(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-  
       setState(() {
         isLoading = false;
       });
-  
       if (user != null) {
-        print("✅ Login Successful: ${user.email}");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => Log()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      // Show custom error messages based on error code.
-      if (e.code == 'wrong-password') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Password entered is incorrect.")),
-        );
-      } else if (e.code == 'user-not-found') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Username entered is incorrect.")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login Failed. Please check your credentials.")),
         );
       }
     } catch (e) {
       setState(() {
         isLoading = false;
       });
+      // Display the specific error message.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("An error occurred. Please try again.")),
+        SnackBar(content: Text(e.toString())),
       );
     }
   }
 
-  void loginWithGoogle() async {
-    // Force sign-out so that the account picker is shown each time.
-    await GoogleSignIn().signOut();
-  
+  Future<void> loginWithGoogle() async {
     setState(() {
       isLoading = true;
     });
@@ -89,7 +72,6 @@ class _LoginPageState extends State<LoginPage> {
       isLoading = false;
     });
     if (user != null) {
-      print("✅ Google Login Successful: ${user.email}");
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => Log()),
@@ -104,14 +86,12 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Use an AppBar with a simple title
       appBar: AppBar(
         title: const Text("Login"),
         backgroundColor: Colors.blue,
       ),
       body: Container(
         decoration: BoxDecoration(
-          // Background gradient for a modern look
           gradient: LinearGradient(
             colors: [Colors.blue.shade100, Colors.white],
             begin: Alignment.topCenter,
@@ -119,7 +99,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         child: Center(
-          // Make it scrollable for smaller screens
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Card(
@@ -130,84 +109,102 @@ class _LoginPageState extends State<LoginPage> {
               margin: const EdgeInsets.all(16),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Optional logo/icon
-                    Icon(
-                      Icons.directions_bus,
-                      size: 64,
-                      color: Colors.blue.shade700,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Welcome Back",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade900,
+                // Form widget for validation.
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.directions_bus,
+                        size: 64,
+                        color: Colors.blue.shade700,
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Email text field
-                    TextField(
-                      controller: emailController,
-                      decoration: const InputDecoration(
-                        labelText: "Email",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Welcome Back",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade900,
+                        ),
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    // Password text field
-                    TextField(
-                      controller: passwordController,
-                      decoration: const InputDecoration(
-                        labelText: "Password",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock),
+                      const SizedBox(height: 24),
+                      // Email input field with regex validation.
+                      TextFormField(
+                        controller: emailController,
+                        decoration: const InputDecoration(
+                          labelText: "Email",
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Please enter your email.";
+                          }
+                          if (!emailRegex.hasMatch(value.trim())) {
+                            return "Enter a valid email address.";
+                          }
+                          return null;
+                        },
                       ),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 24),
-                    isLoading
-                        ? const CircularProgressIndicator()
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              ElevatedButton(
-                                onPressed: login,
-                                child: const Text("Login"),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                      const SizedBox(height: 16),
+                      // Password input field (non-empty check for login).
+                      TextFormField(
+                        controller: passwordController,
+                        decoration: const InputDecoration(
+                          labelText: "Password",
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.lock),
+                        ),
+                        obscureText: true,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Please enter your password.";
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      isLoading
+                          ? const CircularProgressIndicator()
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: login,
+                                  child: const Text("Login"),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: loginWithGoogle,
-                                child: const Text(
-                                  "Login with Google",
-                                  style: TextStyle(color: Colors.black),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: loginWithGoogle,
+                                  child: const Text(
+                                    "Login with Google",
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.redAccent,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                  ),
                                 ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.redAccent,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                ),
-                              ),
-                            ],
-                          ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => SignUpPage()),
-                        );
-                      },
-                      child: const Text("Don't have an account? Sign up"),
-                    ),
-                  ],
+                              ],
+                            ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SignUpPage()),
+                          );
+                        },
+                        child: const Text("Don't have an account? Sign up"),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

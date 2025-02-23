@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:trackbus/Driverloginpage.dart';
 import 'package:trackbus/LoginPage.dart';
 import 'package:trackbus/AboutUs.dart';
-import 'package:trackbus/MapPage.dart';
+import 'package:trackbus/LocalMap.dart';
 import 'package:trackbus/Notifications.dart';
 import 'package:trackbus/ProfilePage.dart';
 
@@ -97,7 +97,7 @@ class _FirstPageState extends State<FirstPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) =>  MapPage()),
+                  MaterialPageRoute(builder: (context) =>  BusTrackingMap()),
                 );
               },
             ),
