@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:trackbus/sharedlocation.dart';
 import 'package:trackbus/Notification_services.dart';
 
@@ -16,32 +17,29 @@ class DriverMapPage extends StatefulWidget {
 class _DriverMapPageState extends State<DriverMapPage> {
   GoogleMapController? _mapController;
   final Location _locationService = Location();
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
   bool _isRouteActive = false;
   Timer? _lateTimer;
   bool _busArrivedNotified = false;
   String _notificationMessage = "";
-
-  // Current driver location (initialized from shared data)
-  LatLng _currentPosition = SharedLocationData.driverLocation;
-
-  // Threshold (in meters) to consider the bus has reached the student.
+  
+  // Location control.
+  bool _locationEnabled = false;
+  StreamSubscription<LocationData>? _locationSubscription;
+  LatLng _currentPosition = const LatLng(0, 0);
+  
+  // Threshold for arrival.
   final double arrivalThreshold = 50.0;
-  // Expected travel duration: 5 minutes.
+  // Expected travel duration.
   final Duration expectedTravelDuration = const Duration(minutes: 5);
 
   @override
   void initState() {
     super.initState();
-    _checkLocationPermissionAndListen();
+    _listenForStudentLocation();
   }
-
-  @override
-  void dispose() {
-    _lateTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _checkLocationPermissionAndListen() async {
+  
+  Future<void> _initializeLocation() async {
     bool serviceEnabled = await _locationService.serviceEnabled();
     if (!serviceEnabled) {
       serviceEnabled = await _locationService.requestService();
@@ -52,14 +50,28 @@ class _DriverMapPageState extends State<DriverMapPage> {
       permissionGranted = await _locationService.requestPermission();
       if (permissionGranted != PermissionStatus.granted) return;
     }
-
-    // Listen for location updates.
-    _locationService.onLocationChanged.listen((LocationData locData) {
+    final locData = await _locationService.getLocation();
+    if (locData.latitude != null && locData.longitude != null) {
+      setState(() {
+        _currentPosition = LatLng(locData.latitude!, locData.longitude!);
+        SharedLocationData.driverLocation = _currentPosition;
+        _locationEnabled = true;
+      });
+      _dbRef.child('locations/driver').set({
+        'latitude': _currentPosition.latitude,
+        'longitude': _currentPosition.longitude,
+      });
+      _dbRef.child('locations/driver').onDisconnect().remove();
+    }
+    _locationSubscription = _locationService.onLocationChanged.listen((locData) {
       if (locData.latitude != null && locData.longitude != null) {
         setState(() {
           _currentPosition = LatLng(locData.latitude!, locData.longitude!);
-          // Update shared driver location.
           SharedLocationData.driverLocation = _currentPosition;
+        });
+        _dbRef.child('locations/driver').set({
+          'latitude': _currentPosition.latitude,
+          'longitude': _currentPosition.longitude,
         });
         if (_isRouteActive && _mapController != null) {
           _mapController!.animateCamera(CameraUpdate.newLatLng(_currentPosition));
@@ -68,8 +80,33 @@ class _DriverMapPageState extends State<DriverMapPage> {
       }
     });
   }
-
-  // Check if the bus has reached the student.
+  
+  Future<void> _disableLocation() async {
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+    setState(() {
+      _locationEnabled = false;
+      _currentPosition = const LatLng(0, 0);
+      SharedLocationData.driverLocation = const LatLng(0, 0);
+    });
+    _dbRef.child('locations/driver').remove();
+  }
+  
+  void _listenForStudentLocation() {
+    _dbRef.child('locations/student').onValue.listen((event) {
+      final data = event.snapshot.value as Map?;
+      if (data != null && data['latitude'] != null && data['longitude'] != null) {
+        LatLng studentLoc = LatLng(
+          (data['latitude'] as num).toDouble(),
+          (data['longitude'] as num).toDouble(),
+        );
+        setState(() {
+          SharedLocationData.studentLocation = studentLoc;
+        });
+      }
+    });
+  }
+  
   void _checkArrival() {
     if (SharedLocationData.isStudentLocationValid) {
       double distance = _calculateDistance(
@@ -86,37 +123,42 @@ class _DriverMapPageState extends State<DriverMapPage> {
         setState(() {
           _notificationMessage = message;
         });
+        _dbRef.child('busNotifications').push().set({
+          'message': message,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        });
       }
     }
   }
-
-  // Haversine formula.
+  
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double R = 6371000; // Earth's radius in meters.
+    const double R = 6371000;
     double dLat = _deg2rad(lat2 - lat1);
     double dLon = _deg2rad(lon2 - lon1);
-    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_deg2rad(lat1)) * math.cos(_deg2rad(lat2)) *
-            math.sin(dLon / 2) * math.sin(dLon / 2);
-    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    double a = math.sin(dLat/2)*math.sin(dLat/2) +
+               math.cos(_deg2rad(lat1)) * math.cos(_deg2rad(lat2)) *
+               math.sin(dLon/2)*math.sin(dLon/2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a));
     return R * c;
   }
-
-  double _deg2rad(double deg) => deg * (math.pi / 180);
-
-  // When Start Route is pressed.
+  
+  double _deg2rad(double deg) => deg * (math.pi/180);
+  
   void _startRoute() {
     setState(() {
       _isRouteActive = true;
       SharedLocationData.routeStarted = true;
       _busArrivedNotified = false;
-      _notificationMessage = "";
+      _notificationMessage = "Route has started";
     });
-    // Immediately send a notification that the route has started.
+    // Show notification locally.
     NotificationService().showNotification("Route Start", "Route has started");
     SharedLocationData.notifications.add("Route has started");
-
-    // Schedule a timer for 5 minutes to check if the bus is still at the location.
+    // Push the notification to Firebase.
+    _dbRef.child('busNotifications').push().set({
+      'message': "Route has started",
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
     _lateTimer?.cancel();
     _lateTimer = Timer(expectedTravelDuration, () {
       if (!_busArrivedNotified) {
@@ -126,11 +168,14 @@ class _DriverMapPageState extends State<DriverMapPage> {
         setState(() {
           _notificationMessage = message;
         });
+        _dbRef.child('busNotifications').push().set({
+          'message': message,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        });
       }
     });
   }
-
-  // When End Route is pressed.
+  
   void _endRoute() {
     setState(() {
       _isRouteActive = false;
@@ -139,30 +184,48 @@ class _DriverMapPageState extends State<DriverMapPage> {
     });
     NotificationService().showNotification("Route End", "Route has ended");
     SharedLocationData.notifications.add("Route has ended");
+    _dbRef.child('busNotifications').push().set({
+      'message': "Route has ended",
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
     _lateTimer?.cancel();
     Navigator.pop(context);
   }
-
+  
+  @override
+  void dispose() {
+    _disableLocation();
+    _lateTimer?.cancel();
+    super.dispose();
+  }
+  
   @override
   Widget build(BuildContext context) {
-    // Center the map between driver and student.
-    LatLng center = LatLng(
-      (SharedLocationData.driverLocation.latitude +
-              SharedLocationData.studentLocation.latitude) /
-          2,
-      (SharedLocationData.driverLocation.longitude +
-              SharedLocationData.studentLocation.longitude) /
-          2,
-    );
-
-    // Build markers.
-    Set<Marker> markers = {
-      Marker(
-        markerId: const MarkerId('driver'),
-        position: _currentPosition,
-        infoWindow: const InfoWindow(title: 'Driver Location'),
-      ),
-    };
+    // Optionally display the latest notification in the AppBar.
+    String latestNotification = _notificationMessage; // or use SharedLocationData.notifications.last if available.
+    
+    // Center map between driver and student if student location is valid.
+    LatLng center = SharedLocationData.isStudentLocationValid
+        ? LatLng(
+            (SharedLocationData.driverLocation.latitude +
+             SharedLocationData.studentLocation.latitude) / 2,
+            (SharedLocationData.driverLocation.longitude +
+             SharedLocationData.studentLocation.longitude) / 2,
+          )
+        : _currentPosition;
+    
+    Set<Marker> markers = {};
+    if (_locationEnabled &&
+        _currentPosition.latitude != 0 &&
+        _currentPosition.longitude != 0) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('driver'),
+          position: _currentPosition,
+          infoWindow: const InfoWindow(title: 'Driver Location'),
+        ),
+      );
+    }
     if (SharedLocationData.isStudentLocationValid) {
       markers.add(
         Marker(
@@ -172,35 +235,48 @@ class _DriverMapPageState extends State<DriverMapPage> {
         ),
       );
     }
-
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Driver Map",
-          style: TextStyle(color: Colors.black, fontSize: 22, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Driver Map",
+                style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold)),
+            if (latestNotification.isNotEmpty)
+              Text(
+                latestNotification,
+                style: const TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+          ],
         ),
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(30),
-          child: _notificationMessage.isNotEmpty
-              ? Container(
-                  width: double.infinity,
-                  color: Colors.yellow,
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    _notificationMessage,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
+        actions: [
+          Row(
+            children: [
+              const Text("Location", style: TextStyle(color: Colors.black)),
+              Switch(
+                value: _locationEnabled,
+                onChanged: (val) {
+                  if (val) {
+                    _initializeLocation();
+                  } else {
+                    _disableLocation();
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
           const SizedBox(height: 16),
-          // Only two buttons: Start Route and End Route.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -216,7 +292,6 @@ class _DriverMapPageState extends State<DriverMapPage> {
             ],
           ),
           const SizedBox(height: 16),
-          // Map view (only shown when route is active).
           Expanded(
             child: _isRouteActive
                 ? GoogleMap(
