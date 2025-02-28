@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:trackbus/DriverMapPage.dart';
+import 'package:url_launcher/url_launcher.dart'; // For making phone calls
+
+// Global attendance logs list to store attendance records across screens.
+List<Map<String, String>> attendanceLogs = [];
 
 class DriverHomePage extends StatelessWidget {
   const DriverHomePage({Key? key}) : super(key: key);
@@ -183,29 +187,29 @@ class _RouteScreenState extends State<RouteScreen> {
 
 class StudentAttendanceScreen extends StatefulWidget {
   @override
-  _StudentAttendanceScreenState createState() =>
-      _StudentAttendanceScreenState();
+  _StudentAttendanceScreenState createState() => _StudentAttendanceScreenState();
 }
 
 class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
+  // List with 10 students, each having separate toggles for check-in and check-out.
   List<Map<String, dynamic>> students = [
-    {'name': 'Alice Johnson', 'checkedIn': false},
-    {'name': 'Bob Smith', 'checkedIn': false},
-    {'name': 'Charlie Brown', 'checkedIn': false},
-    {'name': 'Daisy Miller', 'checkedIn': false},
+    {'name': 'Alice Johnson', 'checkIn': false, 'checkOut': false},
+    {'name': 'Bob Smith', 'checkIn': false, 'checkOut': false},
+    {'name': 'Charlie Brown', 'checkIn': false, 'checkOut': false},
+    {'name': 'Daisy Miller', 'checkIn': false, 'checkOut': false},
+    {'name': 'Ethan Davis', 'checkIn': false, 'checkOut': false},
+    {'name': 'Fiona Garcia', 'checkIn': false, 'checkOut': false},
+    {'name': 'George Harris', 'checkIn': false, 'checkOut': false},
+    {'name': 'Hannah Lee', 'checkIn': false, 'checkOut': false},
+    {'name': 'Ian Martinez', 'checkIn': false, 'checkOut': false},
+    {'name': 'Julia Nguyen', 'checkIn': false, 'checkOut': false},
   ];
-
-  void toggleAttendance(int index) {
-    setState(() {
-      students[index]['checkedIn'] = !students[index]['checkedIn'];
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle attendanceButtonStyle = ElevatedButton.styleFrom(
+    final ButtonStyle saveButtonStyle = ElevatedButton.styleFrom(
       backgroundColor: Colors.blue,
-      minimumSize: const Size(120, 40),
+      minimumSize: const Size(double.infinity, 50),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
@@ -217,25 +221,74 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
         backgroundColor: Colors.blue,
       ),
       body: ListView.builder(
-        itemCount: students.length,
+        itemCount: students.length + 1,
         itemBuilder: (context, index) {
-          bool checkedIn = students[index]['checkedIn'];
-          return ListTile(
-            title: Text(students[index]['name']),
-            trailing: ElevatedButton(
-              onPressed: () => toggleAttendance(index),
-              style: attendanceButtonStyle.copyWith(
-                backgroundColor: MaterialStateProperty.all(
-                  checkedIn ? Colors.orange : Colors.green,
+          if (index < students.length) {
+            var student = students[index];
+            return ListTile(
+              title: Text(student['name']),
+              subtitle: Row(
+                children: [
+                  // Check-In switch
+                  Row(
+                    children: [
+                      const Text("Check-In"),
+                      Switch(
+                        value: student['checkIn'],
+                        onChanged: (value) {
+                          setState(() {
+                            student['checkIn'] = value;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                child: Text(
-                  checkedIn ? 'Check-Out' : 'Check-In',
-                  style: const TextStyle(color: Colors.black),
+                  const SizedBox(width: 20),
+                  // Check-Out switch
+                  Row(
+                    children: [
+                      const Text("Check-Out"),
+                      Switch(
+                        value: student['checkOut'],
+                        onChanged: (value) {
+                          setState(() {
+                            student['checkOut'] = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // Save Attendance button at the end of the list
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20),
+              child: ElevatedButton(
+                onPressed: () {
+                  // Mark student as present if either switch is enabled, otherwise absent.
+                  int presentCount = students.where((s) => (s['checkIn'] == true || s['checkOut'] == true)).length;
+                  int absentCount = students.length - presentCount;
+
+                  String dateTime = DateTime.now().toLocal().toString().substring(0, 16); // e.g., "2025-02-28 14:30"
+                  String details = '$presentCount present, $absentCount absent';
+
+                  attendanceLogs.add({'date': dateTime, 'details': details});
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AttendanceHistoryScreen()),
+                  );
+                },
+                style: saveButtonStyle,
+                child: const Text(
+                  'Save Attendance',
+                  style: TextStyle(color: Colors.black),
                 ),
               ),
-
-          );
+            );
+          }
         },
       ),
     );
@@ -269,29 +322,46 @@ class NavigationScreen extends StatelessWidget {
 }
 
 class EmergencyScreen extends StatelessWidget {
-  void triggerEmergency(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Emergency Alert'),
-        content: const Text(
-            'Emergency has been triggered! Please contact the school admin immediately.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
+  Future<void> triggerEmergency(BuildContext context) async {
+    // Show a confirmation dialog before triggering emergency
+    bool confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Emergency'),
+            content: const Text(
+                'Are you sure you want to trigger an emergency alert? This will call the school admin immediately.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        ) ??
+        false;
+
+    if (confirmed) {
+      // Use Indian phone number format
+      final Uri launchUri = Uri(scheme: 'tel', path: '+919834562812');
+      debugPrint('Attempting to launch: ${launchUri.toString()}');
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch phone call.')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final ButtonStyle emergencyButtonStyle = ElevatedButton.styleFrom(
-      backgroundColor: Colors.blue,
+      backgroundColor: Colors.red, // Red indicates urgency.
       minimumSize: const Size(200, 50),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
@@ -301,7 +371,7 @@ class EmergencyScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Emergency'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.red,
       ),
       body: Center(
         child: ElevatedButton(
@@ -309,7 +379,7 @@ class EmergencyScreen extends StatelessWidget {
           style: emergencyButtonStyle,
           child: const Text(
             'Trigger Emergency',
-            style: TextStyle(color: Colors.black),
+            style: TextStyle(color: Colors.white),
           ),
         ),
       ),
@@ -323,10 +393,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  TextEditingController nameController =
-      TextEditingController(text: 'John Doe');
-  TextEditingController phoneController =
-      TextEditingController(text: '+1 234 567 890');
+  TextEditingController nameController = TextEditingController(text: 'John Doe');
+  TextEditingController phoneController = TextEditingController(text: '+91 9834562812');
 
   void saveProfile() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -383,28 +451,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 class AttendanceHistoryScreen extends StatelessWidget {
-  final List<Map<String, String>> logs = [
-    {'date': '2025-02-18', 'details': 'All students present'},
-    {'date': '2025-02-17', 'details': '1 student absent'},
-    {'date': '2025-02-16', 'details': '2 students absent'},
-  ];
-
   AttendanceHistoryScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Displays the list of attendance logs saved earlier.
     return Scaffold(
       appBar: AppBar(
         title: const Text('Attendance Summary/History'),
         backgroundColor: Colors.blue,
       ),
       body: ListView.builder(
-        itemCount: logs.length,
+        itemCount: attendanceLogs.length,
         itemBuilder: (context, index) {
+          final log = attendanceLogs[index];
           return ListTile(
             leading: const Icon(Icons.history),
-            title: Text(logs[index]['date']!),
-            subtitle: Text(logs[index]['details']!),
+            title: Text(log['date'] ?? ''),
+            subtitle: Text(log['details'] ?? ''),
           );
         },
       ),
