@@ -32,16 +32,14 @@ class Log extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // App bar with modern styling.
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color.fromARGB(255, 16, 128, 219),
         title: const Text(
           'Navigation Page',
           style: TextStyle(color: Colors.black),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      // Enhanced Drawer with a header for better UX.
       drawer: Drawer(
         child: ListView(
           children: [
@@ -78,7 +76,13 @@ class Log extends StatelessWidget {
         ),
       ),
       body: Container(
-        color: Colors.grey[200],
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF2196F3), Color(0xFFBBDEFB)], // Adjusted gradient colors
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         child: Center(
           child: SingleChildScrollView(
             padding:
@@ -95,7 +99,6 @@ class Log extends StatelessWidget {
                 const SizedBox(height: 30),
                 _buildNavigationButton(context, 'Student Details', second_page1()),
                 const SizedBox(height: 30),
-                // Updated Billing Details button.
                 _buildNavigationButton(
                     context, 'Billing Details', const BillingDetailsPage()),
               ],
@@ -130,9 +133,6 @@ class Log extends StatelessWidget {
   }
 }
 
-// ---------------------------
-// Billing Details Page
-// ---------------------------
 class BillingDetailsPage extends StatefulWidget {
   const BillingDetailsPage({super.key});
 
@@ -146,54 +146,8 @@ class _BillingDetailsPageState extends State<BillingDetailsPage> {
   String? _errorMessage;
 
   final List<Map<String, dynamic>> dummyStudents = [
-    {
-      "name": "John Doe",
-      "code": "1234",
-      "email": "johndoe@example.com",
-      "dueDate": "2025-03-15",
-      "feePaid": true,
-      "totalFee": 10000
-    },
-    {
-      "name": "Jane Smith",
-      "code": "5678",
-      "email": "janesmith@example.com",
-      "dueDate": "2025-03-20",
-      "feePaid": false,
-      "totalFee": 12000
-    },
-    {
-      "name": "Michael Brown",
-      "code": "9012",
-      "email": "michaelbrown@example.com",
-      "dueDate": "2025-04-01",
-      "feePaid": true,
-      "totalFee": 9000
-    },
-    {
-      "name": "Emily Davis",
-      "code": "3456",
-      "email": "emilydavis@example.com",
-      "dueDate": "2025-03-28",
-      "feePaid": false,
-      "totalFee": 11000
-    },
-    {
-      "name": "Robert Wilson",
-      "code": "7890",
-      "email": "robertwilson@example.com",
-      "dueDate": "2025-04-05",
-      "feePaid": true,
-      "totalFee": 10000
-    },
-    {
-      "name": "Linda Johnson",
-      "code": "2345",
-      "email": "lindajohnson@example.com",
-      "dueDate": "2025-03-30",
-      "feePaid": false,
-      "totalFee": 12000
-    },
+    {"name": "John Doe", "code": "1234", "email": "johndoe@example.com", "dueDate": "2025-03-15", "feePaid": true, "totalFee": 10000},
+    {"name": "Jane Smith", "code": "5678", "email": "janesmith@example.com", "dueDate": "2025-03-20", "feePaid": false, "totalFee": 12000},
   ];
 
   void _checkBilling() {
@@ -225,75 +179,24 @@ class _BillingDetailsPageState extends State<BillingDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Billing Details'),
-        backgroundColor: Colors.blue,
-      ),
+      appBar: AppBar(title: const Text('Billing Details'), backgroundColor: Colors.blue),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _codeController,
-              decoration: const InputDecoration(
-                labelText: 'Enter 4-digit code',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Enter 4-digit code', border: OutlineInputBorder()),
               keyboardType: TextInputType.number,
               maxLength: 4,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _checkBilling,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'OK',
-                style: TextStyle(fontSize: 18, color: Colors.black),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, minimumSize: const Size(double.infinity, 50)),
+              child: const Text('OK', style: TextStyle(fontSize: 18, color: Colors.black)),
             ),
-            const SizedBox(height: 20),
-            if (_errorMessage != null)
-              Text(
-                _errorMessage!,
-                style: const TextStyle(fontSize: 16, color: Colors.red),
-              ),
-            if (_studentRecord != null) ...[
-              const SizedBox(height: 20),
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Name: ${_studentRecord!["name"]}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('4-digit Code: ${_studentRecord!["code"]}', style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Text('Email: ${_studentRecord!["email"]}', style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Text('Due Date: ${_studentRecord!["dueDate"]}', style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Text('Fee Status: ${_studentRecord!["feePaid"] ? "Paid" : "Not Paid"}', style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Text('Total Fee: \$${_studentRecord!["totalFee"]}', style: const TextStyle(fontSize: 16)),
-                    ],
-                  ),
-                ),
-              )
-            ]
+            if (_errorMessage != null) Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.red)),
           ],
         ),
       ),

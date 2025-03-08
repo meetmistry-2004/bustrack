@@ -10,12 +10,11 @@ class DriverHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A base style for all buttons to keep them consistent
     final ButtonStyle baseButtonStyle = ElevatedButton.styleFrom(
-      backgroundColor: Colors.blue, // Button background color
-      minimumSize: const Size(double.infinity, 50), // Full width, 50 px height
+      backgroundColor: Colors.blue,
+      minimumSize: const Size(double.infinity, 50),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0), // Slightly rounded corners
+        borderRadius: BorderRadius.circular(8.0),
       ),
       textStyle: const TextStyle(
         fontSize: 16,
@@ -28,99 +27,95 @@ class DriverHomePage extends StatelessWidget {
         title: const Text('Driver Home Page'),
         backgroundColor: Colors.blue,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => DriverMapPage()),
-                );
-              },
-              style: baseButtonStyle,
-              child: const Text(
-                'Start Navigation',
-                style: TextStyle(color: Colors.black),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.lightBlueAccent],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ListView(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => DriverMapPage()),
+                  );
+                },
+                style: baseButtonStyle,
+                child: const Text(
+                  'Start Navigation',
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => StudentAttendanceScreen()),
-                );
-              },
-              style: baseButtonStyle,
-              child: const Text(
-                'Student Check-In/Check-Out',
-                style: TextStyle(color: Colors.black),
+              const SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => StudentAttendanceScreen()),
+                  );
+                },
+                style: baseButtonStyle,
+                child: const Text(
+                  'Student Check-In/Check-Out',
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => NavigationScreen()),
-                );
-              },
-              style: baseButtonStyle,
-              child: const Text(
-                'Route Navigation',
-                style: TextStyle(color: Colors.black),
+              const SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EmergencyScreen()),
+                  );
+                },
+                style: baseButtonStyle,
+                child: const Text(
+                  'Emergency',
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => EmergencyScreen()),
-                );
-              },
-              style: baseButtonStyle,
-              child: const Text(
-                'Emergency',
-                style: TextStyle(color: Colors.black),
+              const SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ProfileScreen()),
+                  );
+                },
+                style: baseButtonStyle,
+                child: const Text(
+                  'Profile/Settings',
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfileScreen()),
-                );
-              },
-              style: baseButtonStyle,
-              child: const Text(
-                'Profile/Settings',
-                style: TextStyle(color: Colors.black),
+              const SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AttendanceHistoryScreen()),
+                  );
+                },
+                style: baseButtonStyle,
+                child: const Text(
+                  'Attendance Summary/History',
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AttendanceHistoryScreen()),
-                );
-              },
-              style: baseButtonStyle,
-              child: const Text(
-                'Attendance Summary/History',
-                style: TextStyle(color: Colors.black),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
 
 class RouteScreen extends StatefulWidget {
   @override

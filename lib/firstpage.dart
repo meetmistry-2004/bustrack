@@ -24,7 +24,7 @@ class _FirstPageState extends State<FirstPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Bus_Safe",
+          "BUS SAFE",
           style: TextStyle(
               color: Colors.black,
               fontSize: 22,
@@ -34,52 +34,73 @@ class _FirstPageState extends State<FirstPage> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      // No drawer here so that the page focuses solely on navigation options.
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade50, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Stack(
+        children: [
+          // Gradient Background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade500, Colors.white],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
           ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CustomButton(
-                title: "Login as Student/Parent",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginPage()),
-                  );
-                },
+
+          // Pattern Overlay (Wavy Lines or Dots)
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.2,
+              child: Image.asset(
+                'assets/pattern.png',  // Add a subtle pattern image in assets
+                fit: BoxFit.cover,
               ),
-              const SizedBox(height: 40),
-              CustomButton(
-                title: "Login as Driver",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => DriverLoginPage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 40),
-              CustomButton(
-                title: "General Navigation Map/Routes",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => BusTrackingMap()),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
-        ),
+
+          // UI Elements
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CustomButton(
+                  title: "Login as Student/Parent",
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginPage()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 40),
+                CustomButton(
+                  title: "Login as Driver",
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => DriverLoginPage()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 40),
+                CustomButton(
+                  title: "General Navigation Map/Routes",
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => BusTrackingMap()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 50),
+                
+                // Bus Image at Bottom
+            
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
