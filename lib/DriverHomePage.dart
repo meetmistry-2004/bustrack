@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:trackbus/DriverMapPage.dart';
 import 'package:url_launcher/url_launcher.dart'; // For making phone calls
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+
 
 // Global attendance logs list to store attendance records across screens.
 List<Map<String, String>> attendanceLogs = [];
@@ -390,6 +395,36 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   TextEditingController nameController = TextEditingController(text: 'John Doe');
   TextEditingController phoneController = TextEditingController(text: '+91 9834562812');
+  TextEditingController busNumberController = TextEditingController(text: 'MH 00 78 8055');
+
+  File? _profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
+  }
+
+  Future<void> _loadProfileImage() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/profile_image.png');
+    if (await file.exists()) {
+      setState(() {
+        _profileImage = file;
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedImage != null) {
+      final directory = await getApplicationDocumentsDirectory();
+      final savedImage = await File(pickedImage.path).copy('${directory.path}/profile_image.png');
+      setState(() {
+        _profileImage = savedImage;
+      });
+    }
+  }
 
   void saveProfile() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -399,51 +434,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle profileButtonStyle = ElevatedButton.styleFrom(
-      backgroundColor: Colors.blue,
-      minimumSize: const Size(200, 50),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-    );
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile/Settings'),
-        backgroundColor: Colors.blue,
-      ),
+      appBar: AppBar(title: const Text('Driver Profile')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                  child: _profileImage == null
+                      ? const Icon(Icons.person, size: 50, color: Colors.white)
+                      : null,
+                  backgroundColor: Colors.grey[400],
+                ),
               ),
-            ),
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number',
+              const SizedBox(height: 20),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Driver Name'),
               ),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: saveProfile,
-              style: profileButtonStyle,
-              child: const Text(
-                'Save Profile',
-                style: TextStyle(color: Colors.black),
+              const SizedBox(height: 10),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone Number'),
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              TextField(
+                controller: busNumberController,
+                decoration: const InputDecoration(labelText: 'Bus Number'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: saveProfile,
+                child: const Text('Save Profile'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
 
 class AttendanceHistoryScreen extends StatelessWidget {
   AttendanceHistoryScreen({Key? key}) : super(key: key);
