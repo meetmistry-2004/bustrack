@@ -31,7 +31,7 @@ class _DriverMapPageState extends State<DriverMapPage> {
   // Threshold for arrival.
   final double arrivalThreshold = 50.0;
   // Expected travel duration.
-  final Duration expectedTravelDuration = const Duration(minutes: 5);
+  final Duration expectedTravelDuration = const Duration(minutes: 2);
 
   @override
   void initState() {

@@ -6,6 +6,7 @@ import 'package:trackbus/second_page.dart';
 import 'package:trackbus/ProfilePage.dart';
 import 'package:trackbus/Notifications.dart';
 import 'package:trackbus/AboutUs.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MyApp());
@@ -72,13 +73,24 @@ class Log extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => AboutUsPage()));
               },
             ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.feedback, color: Colors.blue),
+              title: const Text('Feedback', style: TextStyle(fontSize: 16)),
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const FeedbackPageUI()));
+              },
+            ),
           ],
         ),
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF2196F3), Color(0xFFBBDEFB)], // Adjusted gradient colors
+            colors: [Color(0xFF2196F3), Color(0xFFBBDEFB)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -127,7 +139,7 @@ class Log extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 18),
+        style: const TextStyle(fontSize: 18, color: Colors.black),
       ),
     );
   }
@@ -194,9 +206,128 @@ class _BillingDetailsPageState extends State<BillingDetailsPage> {
             ElevatedButton(
               onPressed: _checkBilling,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, minimumSize: const Size(double.infinity, 50)),
-              child: const Text('OK', style: TextStyle(fontSize: 18, color: Colors.black)),
+              child: const Text('OK', style: TextStyle(fontSize: 18, color: Colors.white)),
             ),
-            if (_errorMessage != null) Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.red)),
+            if (_errorMessage != null)
+              Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.red)),
+            const SizedBox(height: 20),
+            if (_studentRecord != null)
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Text("Name: ${_studentRecord!['name']}"),
+                      Text("Email: ${_studentRecord!['email']}"),
+                      Text("Due Date: ${_studentRecord!['dueDate']}"),
+                      Text("Total Fee: ₹${_studentRecord!['totalFee']}"),
+                      Text("Fee Paid: ${_studentRecord!['feePaid'] ? 'Yes' : 'No'}"),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class FeedbackPageUI extends StatefulWidget {
+  const FeedbackPageUI({super.key});
+
+  @override
+  State<FeedbackPageUI> createState() => _FeedbackPageUIState();
+}
+
+class _FeedbackPageUIState extends State<FeedbackPageUI> {
+  final _nameController = TextEditingController();
+  final _feedbackController = TextEditingController();
+
+  void _submit() async {
+    final name = _nameController.text.trim();
+    final feedback = _feedbackController.text.trim();
+
+    if (name.isEmpty || feedback.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'mistrymeet72@gmail.com',
+      query: Uri.encodeFull(
+        'subject=Student Feedback from $name&body=$feedback',
+      ),
+    );
+
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open email app')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Student Feedback'),
+        backgroundColor: const Color.fromARGB(220, 52, 72, 252),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'We value your feedback!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 30),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Your Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _feedbackController,
+              maxLines: 5,
+              decoration: InputDecoration(
+                labelText: 'Your Feedback',
+                alignLabelWithHint: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.send),
+                label: const Text('Submit Feedback'),
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.teal,
+                ),
+              ),
+            ),
           ],
         ),
       ),

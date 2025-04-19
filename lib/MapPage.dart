@@ -140,6 +140,7 @@ class _MapPageState extends State<MapPage> {
           markerId: const MarkerId('student'),
           position: _currentPosition,
           infoWindow: const InfoWindow(title: 'Your Location'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
       );
       if (SharedLocationData.isDriverLocationEnabled) {
