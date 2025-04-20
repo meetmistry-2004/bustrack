@@ -232,6 +232,7 @@ class _DriverMapPageState extends State<DriverMapPage> {
           markerId: const MarkerId('student'),
           position: SharedLocationData.studentLocation,
           infoWindow: const InfoWindow(title: 'Student Location'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
       );
     }
