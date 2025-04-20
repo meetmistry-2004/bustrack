@@ -346,7 +346,7 @@ class EmergencyScreen extends StatelessWidget {
 
     if (confirmed) {
       // Use Indian phone number format
-      final Uri launchUri = Uri(scheme: 'tel', path: '+919834562812');
+      final Uri launchUri = Uri(scheme: 'tel', path: '+919834572812');
       debugPrint('Attempting to launch: ${launchUri.toString()}');
       if (await canLaunchUrl(launchUri)) {
         await launchUrl(launchUri, mode: LaunchMode.externalApplication);
@@ -435,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Driver Profile')),
+      appBar: AppBar(title: const Text('Driver Profile'),backgroundColor: Colors.blue,),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
